@@ -3,6 +3,7 @@
 zig-cache/
 zig-pkg/
 zig-out/
+src/rest.txt
 
 # Local environment files
 .env
