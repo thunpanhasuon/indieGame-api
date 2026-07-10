@@ -1,0 +1,17 @@
+.{
+    .name = .indie_rest,
+    .version = "0.0.1",
+    .fingerprint = 0x2e7c82b299a1da66,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .zap = .{
+            .path = "zig-pkg/zap-0.10.6-GoeB8y-IJAD3m9zkAkeTQalzU1NuvO072u8hA78Irdp8",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "zig-pkg",
+    },
+}
