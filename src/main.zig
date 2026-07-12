@@ -1,5 +1,6 @@
 const std = @import("std");
 const zap = @import("zap");
+const config = @import("utils.zig");
 const app = @import("router.zig");
 
 // health end point that return status of a server
@@ -21,7 +22,11 @@ fn dispatch_routes(req: zap.Request) !void {
     req.setStatus(.not_found);
     req.sendBody("Not Found") catch return;
 }
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    _ = config.process_env(init) catch |err| {
+        std.debug.print("processing env failure {}.\n", .{err});
+    };
+
     // set up app route
     //
     try app.set_routes(std.heap.page_allocator);

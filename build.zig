@@ -16,13 +16,18 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+            .link_libc = true,
             .imports = &.{
                 .{ .name = "zap", .module = zap.module("zap") },
             },
         }),
     });
-
+    exe.root_module.linkSystemLibrary("pq", .{});
+    exe.root_module.addIncludePath(.{ .cwd_relative = "/opt/homebrew/opt/libpq/include" });
+    exe.root_module.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/opt/libpq/lib" });
     b.installArtifact(exe);
+    const check_step = b.step("check", "Check if the code compiles");
+    check_step.dependOn(&exe.step);
 
     const run_step = b.step("run", "Run the server");
     const run_cmd = b.addRunArtifact(exe);
