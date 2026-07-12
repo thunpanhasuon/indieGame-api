@@ -1,6 +1,6 @@
 const std = @import("std");
 const zap = @import("zap");
-const config = @import("utils.zig");
+const config = @import("./config/config.zig");
 const app = @import("router.zig");
 
 // health end point that return status of a server
@@ -23,8 +23,16 @@ fn dispatch_routes(req: zap.Request) !void {
     req.sendBody("Not Found") catch return;
 }
 pub fn main(init: std.process.Init) !void {
-    _ = config.process_env(init) catch |err| {
-        std.debug.print("processing env failure {}.\n", .{err});
+    // setup allocator
+    //
+    var arena_allocator: std.heap.ArenaAllocator = .init(std.heap.page_allocator);
+    defer arena_allocator.deinit();
+    const allocator = arena_allocator.allocator();
+
+    // load the glabol config
+    //
+    config.load_config(init, allocator) catch |err| {
+        std.debug.print("load configure failure {}", .{err});
     };
 
     // set up app route
@@ -47,4 +55,6 @@ pub fn main(init: std.process.Init) !void {
         .threads = 2,
         .workers = 2,
     });
+
+    config.deinit_config();
 }

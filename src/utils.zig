@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn process_env(init: std.process.Init, allocator: std.mem.Allocator) !std.ArrayList(std.StringHashMap(i32)) {
+pub fn process_env(init: std.process.Init, allocator: std.mem.Allocator) !std.ArrayList(std.StringHashMap([]const u8)) {
     // init the file file read
     //
     const io = init.io;
@@ -16,7 +16,7 @@ pub fn process_env(init: std.process.Init, allocator: std.mem.Allocator) !std.Ar
 
     // set up an empty list
     //
-    var list: std.ArrayList(std.StringHashMap(i32)) = .empty;
+    var list: std.ArrayList(std.StringHashMap([]const u8)) = .empty;
     errdefer {
         for (list.items) |*map| map.deinit();
         list.deinit(allocator);
@@ -24,7 +24,7 @@ pub fn process_env(init: std.process.Init, allocator: std.mem.Allocator) !std.Ar
 
     // create a map
     //
-    var map: std.StringHashMap(i32) = .init(allocator);
+    var map: std.StringHashMap([]const u8) = .init(allocator);
     while (try reader.takeDelimiter('\n')) |line| {
         std.debug.print("Line: {s}\n", .{line});
         const eq_pos = std.mem.indexOfScalar(u8, line, '=') orelse return error.NoEquals;
@@ -36,6 +36,6 @@ pub fn process_env(init: std.process.Init, allocator: std.mem.Allocator) !std.Ar
         try map.put(key, value);
     }
 
-    list.append(allocator, map);
+    try list.append(allocator, map);
     return list;
 }

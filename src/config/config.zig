@@ -1,15 +1,22 @@
-const process_env = @import("../utils.zig"); 
-const std = @import("std"); 
+const utils = @import("../utils.zig");
+const std = @import("std");
 
-// global config for api 
+// global config for api
 //
-pub var global_config: std.StringHashMap(i32) = .init(allocator);
-defer global_config.deinit();
+pub var global_config: std.StringHashMap([]const u8) = undefined;
 
-// load all the global config 
+pub fn init_config(allocator: std.mem.Allocator) void {
+    global_config = std.StringHashMap([]const u8).init(allocator);
+}
+pub fn deinit_config() void {
+    global_config.deinit();
+}
+// load all the global config
 //
 pub fn load_config(init: std.process.Init, allocator: std.mem.Allocator) !void {
-    var maps = try process_env(init, allocator);
+    init_config(allocator);
+
+    var maps = try utils.process_env(init, allocator);
     defer {
         for (maps.items) |*map| map.deinit();
         maps.deinit(allocator);
@@ -17,13 +24,13 @@ pub fn load_config(init: std.process.Init, allocator: std.mem.Allocator) !void {
 
     // Iterate every map, every entry
     //
-    for (maps.items, 0..) |*map, i| {
-        std.debug.print("map[{d}]:\n", .{i});
+    for (maps.items) |*map| {
         var it = map.iterator();
         while (it.next()) |entry| {
-            try global_config.put(entry.key_ptr.*, entry.value_ptr.*); 
+            const key = try allocator.dupe(u8, entry.key_ptr.*);
+            const value = try allocator.dupe(u8, entry.value_ptr.*);
+            try global_config.put(key, value);
+            std.debug.print("key: {s}, value: {s}\n", .{ key, value });
         }
     }
 }
-
-
