@@ -1,6 +1,7 @@
 const std = @import("std");
 const zap = @import("zap");
 const config = @import("./config/config.zig");
+const db = @import("./database/db.zig");
 const app = @import("router.zig");
 
 // health end point that return status of a server
@@ -32,7 +33,13 @@ pub fn main(init: std.process.Init) !void {
     // load the glabol config
     //
     config.load_config(init, allocator) catch |err| {
-        std.debug.print("load configure failure {}", .{err});
+        std.debug.print("load configure failure {}\n", .{err});
+    };
+
+    // connect to database
+    //
+    db.db_connection() catch |err| {
+        std.debug.print("can't connect to database {}\n", .{err});
     };
 
     // set up app route

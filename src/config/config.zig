@@ -17,20 +17,14 @@ pub fn load_config(init: std.process.Init, allocator: std.mem.Allocator) !void {
     init_config(allocator);
 
     var maps = try utils.process_env(init, allocator);
-    defer {
-        for (maps.items) |*map| map.deinit();
-        maps.deinit(allocator);
-    }
 
     // Iterate every map, every entry
     //
-    for (maps.items) |*map| {
-        var it = map.iterator();
-        while (it.next()) |entry| {
-            const key = try allocator.dupe(u8, entry.key_ptr.*);
-            const value = try allocator.dupe(u8, entry.value_ptr.*);
-            try global_config.put(key, value);
-            std.debug.print("key: {s}, value: {s}\n", .{ key, value });
-        }
+    var it = maps.iterator();
+    while (it.next()) |entry| {
+        const key = try allocator.dupe(u8, entry.key_ptr.*);
+        const value = try allocator.dupe(u8, entry.value_ptr.*);
+        try global_config.put(key, value);
+        std.debug.print("key: {s}, value: {s}\n", .{ key, value });
     }
 }

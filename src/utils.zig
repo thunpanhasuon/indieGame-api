@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn process_env(init: std.process.Init, allocator: std.mem.Allocator) !std.ArrayList(std.StringHashMap([]const u8)) {
+pub fn process_env(init: std.process.Init, allocator: std.mem.Allocator) !std.StringHashMap([]const u8) {
     // init the file file read
     //
     const io = init.io;
@@ -13,14 +13,6 @@ pub fn process_env(init: std.process.Init, allocator: std.mem.Allocator) !std.Ar
     var buff_reader = file.reader(io, &buff);
 
     const reader: *std.Io.Reader = &buff_reader.interface;
-
-    // set up an empty list
-    //
-    var list: std.ArrayList(std.StringHashMap([]const u8)) = .empty;
-    errdefer {
-        for (list.items) |*map| map.deinit();
-        list.deinit(allocator);
-    }
 
     // create a map
     //
@@ -36,6 +28,5 @@ pub fn process_env(init: std.process.Init, allocator: std.mem.Allocator) !std.Ar
         try map.put(key, value);
     }
 
-    try list.append(allocator, map);
-    return list;
+    return map;
 }
