@@ -1,10 +1,11 @@
 # Zig build output and caches
 .zig-cache/
 zig-cache/
-zig-pkg/
-zig-pkg/
 zig-out/
 src/rest.txt
+zig-pkg/.tmp-*/
+# Stale local package cache; keep the build.zig.zon dependency path trackable.
+zig-pkg/zap-0.10.6-GoeB89aDJAAUufiqV7sUCudCoSSCle0E2fbw388bO1Ug/
 
 # Local environment files
 .env
