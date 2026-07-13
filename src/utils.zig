@@ -1,4 +1,29 @@
 const std = @import("std");
+
+pub fn hash_password_with_argon(allocator: std.mem.Allocator, input: []const u8) []const u8 {
+    var threaded_io = std.Io.Threaded.init(std.heap.page_allocator, .{});
+    defer threaded_io.deinit();
+
+    const io = threaded_io.io();
+
+    const out_hash = allocator.alloc(u8, 128) catch |err| {
+        std.debug.panic("failed to allocate argon2 hash buffer: {}", .{err});
+    };
+
+    const opts = std.crypto.pwhash.argon2.HashOptions{
+        .allocator = allocator,
+        .params = std.crypto.pwhash.argon2.Params.interactive_2id,
+        .encoding = .phc,
+    };
+
+    const hash = std.crypto.pwhash.argon2.strHash(input, opts, out_hash, io) catch |err| {
+        allocator.free(out_hash);
+        std.debug.panic("argon2 password hashing failed: {}", .{err});
+    };
+    std.debug.print("Password successfully hashed!\n", .{});
+    return hash;
+}
+
 pub fn remove_quotes(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
     // create a arraylist
     //

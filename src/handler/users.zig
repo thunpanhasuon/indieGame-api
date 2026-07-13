@@ -1,4 +1,5 @@
 const std = @import("std");
+const util = @import("../utils.zig");
 const zap = @import("zap");
 
 const User = struct {
@@ -24,11 +25,12 @@ pub fn create_user(req: zap.Request) !void {
             return;
         };
         defer parsed.deinit();
-
+        
         const request = parsed.value;
+        const hash_password = util.hash_password_with_argon(allocator, request.password);
         const user = User{
             .email = request.email,
-            .password = request.password,
+            .password = hash_password,
         };
         std.debug.print("Email: {s}\nPassword: {s}\n", .{
             user.email,
