@@ -1,5 +1,17 @@
 const std = @import("std");
+pub fn remove_quotes(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
+    // create a arraylist
+    //
+    var list: std.ArrayList(u8) = .empty;
+    defer list.deinit(allocator);
 
+    for (input) |c| {
+        if (c != '"' and c != '\'') {
+            try list.append(allocator, c);
+        }
+    }
+    return list.toOwnedSlice(allocator);
+}
 pub fn process_env(init: std.process.Init, allocator: std.mem.Allocator) !std.StringHashMap([]const u8) {
     // init the file file read
     //

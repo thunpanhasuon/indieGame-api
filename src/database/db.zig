@@ -1,4 +1,6 @@
 const std = @import("std");
+const util = @import("../utils.zig");
+
 const c = @cImport({
     @cInclude("libpq-fe.h");
 });
@@ -13,7 +15,12 @@ pub fn db_connection() !void {
     defer arena_allocator.deinit();
     const allocator = arena_allocator.allocator();
 
-    const conn_str = config.global_config.get("DB").?;
+    const map_str = config.global_config.get("DB") orelse "not-found";
+    const conn_str = util.remove_quotes(allocator, map_str) catch |err| {
+        std.debug.print("Error occurred: {}\n", .{err});
+        return;
+    };
+
     const c_connection_str = try allocator.dupeZ(u8, conn_str);
     defer allocator.free(c_connection_str);
 
