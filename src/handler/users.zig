@@ -6,13 +6,15 @@ const User = struct {
     email: []const u8,
     password: []const u8,
 };
+pub const UsersEndpoint = struct {
+    path: []const u8 = "/api/users",
+    error_strategy: zap.Endpoint.ErrorStrategy = .log_to_response,
 
-pub fn create_user(req: zap.Request) !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
+    pub fn post(_: *UsersEndpoint, req: zap.Request) !void {
+        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        defer arena.deinit();
+        const allocator = arena.allocator();
 
-    if (req.method != null and std.mem.eql(u8, req.method.?, "POST")) {
         const body = req.body orelse {
             req.setStatus(.bad_request);
             req.sendBody("invalid-requesst") catch return;
@@ -25,7 +27,7 @@ pub fn create_user(req: zap.Request) !void {
             return;
         };
         defer parsed.deinit();
-        
+
         const request = parsed.value;
         const hash_password = util.hash_password_with_argon(allocator, request.password);
         const user = User{
@@ -38,4 +40,4 @@ pub fn create_user(req: zap.Request) !void {
         });
         req.sendJson("{\"status\":\"created\"}") catch return;
     }
-}
+};
