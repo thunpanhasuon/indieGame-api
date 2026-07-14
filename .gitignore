@@ -2,7 +2,10 @@
 .zig-cache/
 zig-cache/
 zig-out/
+
+# Local scratch notes
 src/rest.txt
+src/routing_mental_model.txt
 zig-pkg/zap-0.10.6-GoeB8y-IJAD3m9zkAkeTQalzU1NuvO072u8hA78Irdp8
 # Local environment files
 .env

@@ -1,9 +1,9 @@
 const std = @import("std");
 const zap = @import("zap");
 const middleware = @import("./middleware/middleware.zig");
+const ep_home = @import("./handler/handler.zig");
 const ep_user = @import("./handler/users.zig");
 const config = @import("./config/config.zig");
-const db = @import("./database/db.zig");
 
 const Context = middleware.Context;
 const Handler = middleware.Handler;
@@ -42,21 +42,29 @@ pub fn main(init: std.process.Init) !void {
     config.load_config(init, allocator) catch |err| {
         std.debug.print("load configure failure {}\n", .{err});
     };
-
-    // connect to database
+    // Build the request chain from the end back to the start:
+    // fallback handles anything no endpoint matched.
+    // user_handler handles POST /api/users, then falls back.
+    // home_handler handles GET /app/doc, then falls through to users.
+    // logger is the first handler the listener calls.
     //
-    db.db_connection() catch |err| {
-        std.debug.print("can't connect to database {}\n", .{err});
-    };
-
-    // Initialize the HTTP listener on port 3000
-    //
-    var user_endpoint = ep_user.UsersEndpoint{ .path = "/api/users" };
+    // Final flow:
+    // listener -> logger -> home_handler -> user_handler -> fallback
     var fallback = Handler.init(dispatch_routes, null);
-    var endpoint = zap.Middleware.EndpointHandler(Handler, ep_user.UsersEndpoint, Context).init(&user_endpoint, &fallback, .{
+
+    var user_endpoint = ep_user.UsersEndpoint{ .path = "/api/users" };
+    var user_handler = zap.Middleware.EndpointHandler(Handler, ep_user.UsersEndpoint, Context).init(&user_endpoint, &fallback, .{
         .checkPath = true,
     });
-    var logger = LoggingHandler.init(endpoint.getHandler());
+
+    var home_end_point = ep_home.homePageEndpoint{ .path = "/app/doc" };
+    var home_handler = zap.Middleware.EndpointHandler(
+        Handler,
+        ep_home.homePageEndpoint,
+        Context,
+    ).init(&home_end_point, user_handler.getHandler(), .{ .checkPath = true });
+
+    var logger = LoggingHandler.init(home_handler.getHandler());
 
     var listener = try zap.Middleware.Listener(Context).init(.{
         .on_request = null,
@@ -67,11 +75,11 @@ pub fn main(init: std.process.Init) !void {
 
     std.debug.print("Server running on http://localhost:3000\n", .{});
 
-    // Start the worker thread pool
-    //
+    // Local dev on macOS: keep one worker process.
+    // workers > 1 enables facil.io cluster mode, which forks child processes.
     zap.start(.{
-        .threads = 2,
-        .workers = 2,
+        .threads = 1,
+        .workers = 1,
     });
 
     config.deinit_config();

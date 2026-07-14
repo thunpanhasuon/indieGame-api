@@ -1,11 +1,13 @@
 const std = @import("std");
+const db = @import("../database/db.zig");
 const util = @import("../utils.zig");
 const zap = @import("zap");
 
-const User = struct {
+pub const User = struct {
     email: []const u8,
     password: []const u8,
 };
+
 pub const UsersEndpoint = struct {
     path: []const u8 = "/api/users",
     error_strategy: zap.Endpoint.ErrorStrategy = .log_to_response,
@@ -34,6 +36,23 @@ pub const UsersEndpoint = struct {
             .email = request.email,
             .password = hash_password,
         };
+        
+        // create use to the database
+        //
+        const conn = db.db_connection() catch |err| {
+            std.debug.print("fail to connect to the database -> {}", .{err});
+            return;
+        };
+        defer db.close_connection(conn);
+        try db.createTable(conn);
+
+        const c_email = try allocator.dupeZ(u8, user.email);
+        const c_password = try allocator.dupeZ(u8, user.password);
+        db.createUser(conn, c_email, c_password) catch |err| switch (err) {
+            error.DuplicateEmail => std.debug.print("user already exists\n", .{}),
+            else => return err,
+        };
+
         std.debug.print("Email: {s}\nPassword: {s}\n", .{
             user.email,
             user.password,
