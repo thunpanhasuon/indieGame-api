@@ -100,9 +100,12 @@ pub fn createUser(conn: ?*c.PGconn, email: [*:0]const u8, password: [*:0]const u
     }
 }
 
-pub fn getEmail(allocator: std.mem.Allocator, conn: ?*c.PGconn, email: [*:0]const u8) !?Credentials {
+pub fn getEmail(allocator: std.mem.Allocator, conn: ?*c.PGconn, email: []const u8) !?Credentials {
     const query = "SELECT email, password FROM users WHERE email = $1";
-    const params = [_]?[*:0]const u8{email};
+    const email_z = try allocator.dupeZ(u8, email);
+    defer allocator.free(email_z);
+
+    const params = [_]?[*:0]const u8{email_z};
     const res = c.PQexecParams(
         conn,
         query,
@@ -116,7 +119,7 @@ pub fn getEmail(allocator: std.mem.Allocator, conn: ?*c.PGconn, email: [*:0]cons
 
     defer c.PQclear(res);
 
-    if (c.PQresetStart(res) != c.PGRES_TUPLES_OK) {
+    if (c.PQresultStatus(res) != c.PGRES_TUPLES_OK) {
         std.debug.print("Query failed: {s}\n", .{c.PQerrorMessage(conn)});
         return error.QueryFailed;
     }

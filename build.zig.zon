@@ -1,7 +1,7 @@
 .{
-    .name = .indie_rest,
+    .name = .weather_api,
     .version = "0.0.1",
-    .fingerprint = 0x2e7c82b299a1da66,
+    .fingerprint = 0x4a0a02087be9ad2c,
     .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .zap = .{

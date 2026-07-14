@@ -1,11 +1,22 @@
 const std = @import("std");
 
 pub fn hash_password_verify_with_argon(allocator: std.mem.Allocator, input: []const u8, hash_input: []const u8) !bool {
-    return std.crypto.pwhash.argon2.strVerify(
-        input,
+    var threaded_io = std.Io.Threaded.init(std.heap.page_allocator, .{});
+    defer threaded_io.deinit();
+
+    const io = threaded_io.io();
+
+    std.crypto.pwhash.argon2.strVerify(
         hash_input,
+        input,
         .{ .allocator = allocator },
-    );
+        io,
+    ) catch |err| switch (err) {
+        error.PasswordVerificationFailed => return false,
+        else => return err,
+    };
+
+    return true;
 }
 pub fn hash_password_with_argon(allocator: std.mem.Allocator, input: []const u8) []const u8 {
     var threaded_io = std.Io.Threaded.init(std.heap.page_allocator, .{});

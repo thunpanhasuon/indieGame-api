@@ -2,6 +2,7 @@ const std = @import("std");
 const zap = @import("zap");
 const middleware = @import("./middleware/middleware.zig");
 const ep_home = @import("./handler/handler.zig");
+const ep_weather = @import("./handler/weather.zig");
 const ep_user = @import("./handler/users.zig");
 const config = @import("./config/config.zig");
 
@@ -45,15 +46,27 @@ pub fn main(init: std.process.Init) !void {
     // Build the request chain from the end back to the start:
     // fallback handles anything no endpoint matched.
     // user_handler handles POST /api/users, then falls back.
-    // home_handler handles GET /app/doc, then falls through to users.
+    // login_handler handles POST /api/login, then falls through to users.
+    // weather_handler handles GET /api/v1/weather, then falls through to login.
+    // home_handler handles GET /app/doc, then falls through to weather.
     // logger is the first handler the listener calls.
     //
     // Final flow:
-    // listener -> logger -> home_handler -> user_handler -> fallback
+    // listener -> logger -> home_handler -> weather_handler -> login_handler -> user_handler -> fallback
     var fallback = Handler.init(dispatch_routes, null);
 
     var user_endpoint = ep_user.UsersEndpoint{ .path = "/api/users" };
     var user_handler = zap.Middleware.EndpointHandler(Handler, ep_user.UsersEndpoint, Context).init(&user_endpoint, &fallback, .{
+        .checkPath = true,
+    });
+
+    var login_endpoint = ep_user.LoginEndpoint{ .path = "/api/login" };
+    var login_handler = zap.Middleware.EndpointHandler(Handler, ep_user.LoginEndpoint, Context).init(&login_endpoint, user_handler.getHandler(), .{
+        .checkPath = true,
+    });
+
+    var weather_endpoint = ep_weather.WeatherEndpoint{ .path = "/api/v1/weather" };
+    var weather_handler = zap.Middleware.EndpointHandler(Handler, ep_weather.WeatherEndpoint, Context).init(&weather_endpoint, login_handler.getHandler(), .{
         .checkPath = true,
     });
 
@@ -62,7 +75,7 @@ pub fn main(init: std.process.Init) !void {
         Handler,
         ep_home.homePageEndpoint,
         Context,
-    ).init(&home_end_point, user_handler.getHandler(), .{ .checkPath = true });
+    ).init(&home_end_point, weather_handler.getHandler(), .{ .checkPath = true });
 
     var logger = LoggingHandler.init(home_handler.getHandler());
 
